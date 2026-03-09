@@ -1,55 +1,47 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+type ProductoDashboard = {
+  stock: number;
+  stockMinimo: number;
+};
+
 export async function GET() {
   try {
-    const totalProductos = await prisma.producto.count();
-    const totalCategorias = await prisma.categoria.count();
-
-    const productos = await prisma.producto.findMany({
-      include: {
-        categoria: true,
+    const productos = (await prisma.producto.findMany({
+      select: {
+        stock: true,
+        stockMinimo: true,
       },
-      orderBy: {
-        creadoEn: "desc",
-      },
-    });
+    })) as ProductoDashboard[];
 
-    const movimientosRecientes = await prisma.movimientoInventario.findMany({
-      include: {
-        producto: {
-          include: {
-            categoria: true,
-          },
-        },
-        usuario: true,
-      },
-      orderBy: {
-        creadoEn: "desc",
-      },
-      take: 5,
-    });
+    const totalProductos = productos.length;
 
-    const stockTotal = productos.reduce((acc, producto) => acc + producto.stock, 0);
-
-    const productosStockBajo = productos.filter(
-      (producto) => producto.stock <= producto.stockMinimo
+    const stockTotal = productos.reduce(
+      (acc: number, producto: ProductoDashboard) => acc + producto.stock,
+      0
     );
 
-    const productosAgotados = productos.filter((producto) => producto.stock === 0);
+    const productosStockBajo = productos.filter(
+      (producto: ProductoDashboard) =>
+        producto.stock > 0 && producto.stock <= producto.stockMinimo
+    );
+
+    const productosAgotados = productos.filter(
+      (producto: ProductoDashboard) => producto.stock <= 0
+    );
 
     return NextResponse.json({
       totalProductos,
-      totalCategorias,
       stockTotal,
-      totalStockBajo: productosStockBajo.length,
-      totalAgotados: productosAgotados.length,
-      productosStockBajo,
-      movimientosRecientes,
+      stockBajo: productosStockBajo.length,
+      agotados: productosAgotados.length,
     });
-  } catch {
+  } catch (error) {
+    console.error("Error al obtener dashboard:", error);
+
     return NextResponse.json(
-      { error: "No se pudieron obtener los datos del dashboard" },
+      { error: "No se pudo obtener la información del dashboard" },
       { status: 500 }
     );
   }
