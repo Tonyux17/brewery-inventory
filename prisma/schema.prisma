@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RolUsuario {
+  ADMINISTRADOR
+  ALMACENISTA
+  VENTAS
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+  AJUSTE
+}
+
+enum MotivoMovimiento {
+  PRODUCCION
+  VENTA
+  MERMA
+  AJUSTE_MANUAL
+}
+
+model Usuario {
+  id             String                @id @default(cuid())
+  nombre         String
+  correo         String                @unique
+  passwordHash   String
+  rol            RolUsuario            @default(ALMACENISTA)
+  movimientos    MovimientoInventario[]
+  creadoEn       DateTime              @default(now())
+  actualizadoEn  DateTime              @updatedAt
+}
+
+model Categoria {
+  id             String      @id @default(cuid())
+  nombre         String      @unique
+  descripcion    String?
+  productos      Producto[]
+  creadoEn       DateTime    @default(now())
+  actualizadoEn  DateTime    @updatedAt
+}
+
+model Proveedor {
+  id             String                @id @default(cuid())
+  nombre         String
+  empresa        String?
+  telefono       String?
+  correo         String?
+  direccion      String?
+  movimientos    MovimientoInventario[]
+  creadoEn       DateTime              @default(now())
+  actualizadoEn  DateTime              @updatedAt
+}
+
+model Producto {
+  id               String                  @id @default(cuid())
+  nombre           String
+  descripcion      String?
+  sku              String                  @unique
+  codigoBarras     String?                 @unique
+  volumenMl        Int?
+  precioCompra     Decimal                 @db.Decimal(10, 2)
+  precioVenta      Decimal                 @db.Decimal(10, 2)
+  stock            Int                     @default(0)
+  stockMinimo      Int                     @default(5)
+  activo           Boolean                 @default(true)
+
+  categoriaId      String
+  categoria        Categoria               @relation(fields: [categoriaId], references: [id])
+
+  movimientos      MovimientoInventario[]
+
+  creadoEn         DateTime                @default(now())
+  actualizadoEn    DateTime                @updatedAt
+}
+
+model MovimientoInventario {
+  id               String            @id @default(cuid())
+  tipo             TipoMovimiento
+  motivo           MotivoMovimiento
+  cantidad         Int
+  stockAnterior    Int
+  stockNuevo       Int
+  notas            String?
+
+  productoId       String
+  producto         Producto          @relation(fields: [productoId], references: [id])
+
+  usuarioId        String
+  usuario          Usuario           @relation(fields: [usuarioId], references: [id])
+
+  proveedorId      String?
+  proveedor        Proveedor?        @relation(fields: [proveedorId], references: [id])
+
+  creadoEn         DateTime          @default(now())
+}
