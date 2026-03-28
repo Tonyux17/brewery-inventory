@@ -8,19 +8,26 @@ type Categoria = {
   nombre: string;
   descripcion: string | null;
   creadoEn: string;
+  activo: boolean;
 };
+
+type FiltroEstado = "todos" | "activas" | "inactivas";
 
 export default function PaginaCategorias() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("todos");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [procesandoEstado, setProcesandoEstado] = useState<string | null>(null);
 
   async function cargarCategorias() {
-    const respuesta = await fetch("/api/categorias");
+    const respuesta = await fetch("/api/categorias?incluirInactivas=true", {
+      cache: "no-store",
+    });
     const data = await respuesta.json();
 
     if (!respuesta.ok) {
@@ -82,25 +89,72 @@ export default function PaginaCategorias() {
     }
   }
 
+  async function cambiarEstadoCategoria(id: string, activo: boolean) {
+    try {
+      setError("");
+      setProcesandoEstado(id);
+
+      const respuesta = await fetch(`/api/categorias/${id}/estado`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ activo }),
+      });
+
+      const data = await respuesta.json();
+
+      if (!respuesta.ok) {
+        setError(data.error || "No se pudo actualizar el estado");
+        return;
+      }
+
+      setCategorias((prev) =>
+        prev.map((categoria) =>
+          categoria.id === id ? { ...categoria, activo: data.activo } : categoria
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      setError("Ocurrió un error al actualizar el estado");
+    } finally {
+      setProcesandoEstado(null);
+    }
+  }
+
   const categoriasFiltradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
 
-    return categorias.filter((categoria) => {
-      if (!texto) return true;
+    return categorias
+      .filter((categoria) => {
+        const coincideTexto =
+          !texto ||
+          categoria.nombre.toLowerCase().includes(texto) ||
+          (categoria.descripcion || "").toLowerCase().includes(texto);
 
-      return (
-        categoria.nombre.toLowerCase().includes(texto) ||
-        (categoria.descripcion || "").toLowerCase().includes(texto)
-      );
-    });
-  }, [categorias, busqueda]);
+        const coincideEstado =
+          filtroEstado === "todos" ||
+          (filtroEstado === "activas" && categoria.activo) ||
+          (filtroEstado === "inactivas" && !categoria.activo);
+
+        return coincideTexto && coincideEstado;
+      })
+      .sort((a, b) => {
+        if (a.activo !== b.activo) {
+          return a.activo ? -1 : 1;
+        }
+
+        return a.nombre.localeCompare(b.nombre);
+      });
+  }, [categorias, busqueda, filtroEstado]);
 
   function exportarCategoriasCSV() {
-    const encabezados = ["Nombre", "Descripcion", "FechaCreacion"];
+    const encabezados = ["Nombre", "Descripcion", "Estado", "FechaCreacion"];
 
     const filas = categoriasFiltradas.map((categoria) => [
       categoria.nombre,
       categoria.descripcion || "",
+      categoria.activo ? "Activa" : "Inactiva",
       new Date(categoria.creadoEn).toLocaleString(),
     ]);
 
@@ -121,6 +175,11 @@ export default function PaginaCategorias() {
     enlace.click();
 
     URL.revokeObjectURL(url);
+  }
+
+  function limpiarFiltros() {
+    setBusqueda("");
+    setFiltroEstado("todos");
   }
 
   return (
@@ -379,8 +438,14 @@ export default function PaginaCategorias() {
             </form>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
-            <div
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <section
               style={{
                 background: "#ffffff",
                 borderRadius: "28px",
@@ -389,93 +454,49 @@ export default function PaginaCategorias() {
                 boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
               }}
             >
-              <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.14em",
-                    color: "#9ca3af",
-                    fontWeight: 700,
-                  }}
-                >
-                  Búsqueda
-                </p>
-                <h2
-                  style={{
-                    margin: "10px 0 0 0",
-                    fontSize: "30px",
-                    color: "#111827",
-                    fontWeight: 800,
-                  }}
-                >
-                  Lista de categorías
-                </h2>
-                <p
-                  style={{
-                    margin: "8px 0 0 0",
-                    fontSize: "14px",
-                    color: "#6b7280",
-                  }}
-                >
-                  Consulta, busca y exporta las categorías registradas.
-                </p>
-              </div>
-
               <div
                 style={{
-                  marginTop: "22px",
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: "12px",
-                  alignItems: "end",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "16px",
+                  flexWrap: "wrap",
+                  alignItems: "center",
                 }}
               >
                 <div>
-                  <label
+                  <h2
                     style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      color: "#374151",
+                      margin: 0,
+                      fontSize: "24px",
+                      fontWeight: 800,
+                      color: "#111827",
                     }}
                   >
-                    Buscar
-                  </label>
-                  <input
-                    type="text"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder="Nombre o descripción"
+                    Explorar categorías
+                  </h2>
+                  <p
                     style={{
-                      width: "100%",
-                      borderRadius: "16px",
-                      border: "1px solid #d1d5db",
-                      padding: "12px 14px",
+                      margin: "8px 0 0 0",
                       fontSize: "14px",
-                      color: "#111827",
-                      background: "#ffffff",
-                      outline: "none",
-                      boxSizing: "border-box",
+                      color: "#6b7280",
                     }}
-                  />
+                  >
+                    Busca, filtra y exporta las categorías del sistema.
+                  </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={exportarCategoriasCSV}
                   style={{
-                    background: "#111827",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "14px",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#111827",
+                    borderRadius: "16px",
                     padding: "12px 16px",
                     fontSize: "14px",
                     fontWeight: 700,
                     cursor: "pointer",
-                    height: "46px",
                   }}
                 >
                   Exportar CSV
@@ -484,7 +505,85 @@ export default function PaginaCategorias() {
 
               <div
                 style={{
-                  marginTop: "18px",
+                  marginTop: "20px",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto auto auto",
+                  gap: "12px",
+                }}
+              >
+                <input
+                  type="text"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar por nombre o descripción"
+                  style={{
+                    width: "100%",
+                    borderRadius: "16px",
+                    border: "1px solid #d1d5db",
+                    padding: "12px 14px",
+                    fontSize: "14px",
+                    color: "#111827",
+                    background: "#ffffff",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado("todos")}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: filtroEstado === "todos" ? "#111827" : "#ffffff",
+                    color: filtroEstado === "todos" ? "#ffffff" : "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Todas
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado("activas")}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: filtroEstado === "activas" ? "#16a34a" : "#ffffff",
+                    color: filtroEstado === "activas" ? "#ffffff" : "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Activas
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado("inactivas")}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: filtroEstado === "inactivas" ? "#dc2626" : "#ffffff",
+                    color: filtroEstado === "inactivas" ? "#ffffff" : "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Inactivas
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "12px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -495,90 +594,104 @@ export default function PaginaCategorias() {
                 <p
                   style={{
                     margin: 0,
-                    fontSize: "14px",
+                    fontSize: "13px",
                     color: "#6b7280",
-                    fontWeight: 600,
                   }}
                 >
-                  Mostrando {categoriasFiltradas.length} de {categorias.length} categorías
+                  Mostrando {categoriasFiltradas.length} categoría(s)
                 </p>
+
+                <button
+                  type="button"
+                  onClick={limpiarFiltros}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#2563eb",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontSize: "13px",
+                  }}
+                >
+                  Limpiar filtros
+                </button>
               </div>
-            </div>
+            </section>
 
             {cargando ? (
-              <div
+              <section
                 style={{
                   background: "#ffffff",
                   borderRadius: "28px",
-                  padding: "24px",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
-                  color: "#6b7280",
-                  fontSize: "14px",
-                }}
-              >
-                Cargando categorías...
-              </div>
-            ) : categoriasFiltradas.length === 0 ? (
-              <div
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "28px",
-                  padding: "24px",
+                  padding: "32px",
                   border: "1px solid #e5e7eb",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
                 }}
               >
-                <div
+                <p
                   style={{
-                    borderRadius: "20px",
-                    padding: "18px",
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
+                    margin: 0,
+                    color: "#6b7280",
+                    fontSize: "15px",
                   }}
                 >
-                  <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
-                    Sin resultados
-                  </p>
-                  <p
-                    style={{
-                      margin: "8px 0 0 0",
-                      color: "#2563eb",
-                      fontSize: "14px",
-                    }}
-                  >
-                    No se encontraron categorías con la búsqueda actual.
-                  </p>
-                </div>
-              </div>
+                  Cargando categorías...
+                </p>
+              </section>
+            ) : categoriasFiltradas.length === 0 ? (
+              <section
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "28px",
+                  padding: "32px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#6b7280",
+                    fontSize: "15px",
+                  }}
+                >
+                  No se encontraron categorías con los filtros aplicados.
+                </p>
+              </section>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: "18px",
+                }}
+              >
                 {categoriasFiltradas.map((categoria) => (
-                  <div
+                  <article
                     key={categoria.id}
                     style={{
                       background: "#ffffff",
                       borderRadius: "28px",
-                      padding: "22px",
+                      padding: "24px",
                       border: "1px solid #e5e7eb",
                       boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                      opacity: categoria.activo ? 1 : 0.78,
                     }}
                   >
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
+                        gap: "16px",
                         alignItems: "flex-start",
-                        gap: "18px",
                         flexWrap: "wrap",
                       }}
                     >
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ flex: 1 }}>
                         <div
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "10px",
+                            gap: "12px",
                             flexWrap: "wrap",
                           }}
                         >
@@ -595,15 +708,17 @@ export default function PaginaCategorias() {
 
                           <span
                             style={{
-                              background: "#e0e7ff",
-                              color: "#3730a3",
+                              display: "inline-flex",
+                              alignItems: "center",
                               borderRadius: "999px",
                               padding: "6px 12px",
                               fontSize: "12px",
                               fontWeight: 800,
+                              background: categoria.activo ? "#dcfce7" : "#e5e7eb",
+                              color: categoria.activo ? "#166534" : "#475569",
                             }}
                           >
-                            Categoría
+                            {categoria.activo ? "Activa" : "Inactiva"}
                           </span>
                         </div>
 
@@ -612,7 +727,6 @@ export default function PaginaCategorias() {
                             margin: "12px 0 0 0",
                             fontSize: "15px",
                             color: "#6b7280",
-                            lineHeight: 1.6,
                           }}
                         >
                           {categoria.descripcion || "Sin descripción"}
@@ -621,27 +735,27 @@ export default function PaginaCategorias() {
 
                       <div
                         style={{
-                          minWidth: "150px",
+                          minWidth: "130px",
                           textAlign: "right",
                         }}
                       >
                         <p
                           style={{
                             margin: 0,
-                            fontSize: "12px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.12em",
+                            fontSize: "11px",
                             color: "#9ca3af",
-                            fontWeight: 700,
+                            fontWeight: 800,
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
                           }}
                         >
-                          Creado
+                          Creada
                         </p>
                         <p
                           style={{
                             margin: "8px 0 0 0",
                             fontSize: "14px",
-                            color: "#4b5563",
+                            color: "#374151",
                             fontWeight: 700,
                           }}
                         >
@@ -649,7 +763,92 @@ export default function PaginaCategorias() {
                         </p>
                       </div>
                     </div>
-                  </div>
+
+                    <div
+                      style={{
+                        marginTop: "22px",
+                        display: "flex",
+                        gap: "12px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Link
+                        href={`/categorias/${categoria.id}`}
+                        style={{
+                          textDecoration: "none",
+                          borderRadius: "16px",
+                          border: "1px solid #d1d5db",
+                          background: "#ffffff",
+                          color: "#111827",
+                          padding: "12px 16px",
+                          fontSize: "14px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Editar categoría
+                      </Link>
+
+                      {categoria.activo ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const confirmado = window.confirm(
+                              `¿Deseas eliminar la categoría "${categoria.nombre}"?`
+                            );
+
+                            if (confirmado) {
+                              cambiarEstadoCategoria(categoria.id, false);
+                            }
+                          }}
+                          disabled={procesandoEstado === categoria.id}
+                          style={{
+                            border: "none",
+                            borderRadius: "16px",
+                            background: "#dc2626",
+                            color: "#ffffff",
+                            padding: "12px 16px",
+                            fontSize: "14px",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            opacity: procesandoEstado === categoria.id ? 0.7 : 1,
+                          }}
+                        >
+                          {procesandoEstado === categoria.id
+                            ? "Eliminando..."
+                            : "Eliminar"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const confirmado = window.confirm(
+                              `¿Deseas restaurar la categoría "${categoria.nombre}"?`
+                            );
+
+                            if (confirmado) {
+                              cambiarEstadoCategoria(categoria.id, true);
+                            }
+                          }}
+                          disabled={procesandoEstado === categoria.id}
+                          style={{
+                            border: "1px solid #d1d5db",
+                            borderRadius: "16px",
+                            background: "#ffffff",
+                            color: "#111827",
+                            padding: "12px 16px",
+                            fontSize: "14px",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            opacity: procesandoEstado === categoria.id ? 0.7 : 1,
+                          }}
+                        >
+                          {procesandoEstado === categoria.id
+                            ? "Restaurando..."
+                            : "Restaurar"}
+                        </button>
+                      )}
+                    </div>
+                  </article>
                 ))}
               </div>
             )}

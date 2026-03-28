@@ -6,13 +6,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const desde = searchParams.get("desde");
     const hasta = searchParams.get("hasta");
+    const incluirAnulados = searchParams.get("incluirAnulados") === "true";
 
     const where: {
       creadoEn?: {
         gte?: Date;
         lte?: Date;
       };
+      estado?: "ACTIVO" | "ANULADO";
     } = {};
+
+    if (!incluirAnulados) {
+      where.estado = "ACTIVO";
+    }
 
     if (desde || hasta) {
       where.creadoEn = {};
@@ -133,7 +139,9 @@ export async function GET(request: Request) {
       productosMasMovidos,
       movimientos,
     });
-  } catch {
+  } catch (error) {
+    console.error("Error al generar reportes:", error);
+
     return NextResponse.json(
       { error: "No se pudieron generar los reportes" },
       { status: 500 }

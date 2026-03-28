@@ -25,12 +25,18 @@ enum MotivoMovimiento {
   AJUSTE_MANUAL
 }
 
+enum EstadoMovimiento {
+  ACTIVO
+  ANULADO
+}
+
 model Usuario {
   id             String                @id @default(cuid())
   nombre         String
   correo         String                @unique
   passwordHash   String
   rol            RolUsuario            @default(ALMACENISTA)
+  activo         Boolean               @default(true)
   movimientos    MovimientoInventario[]
   creadoEn       DateTime              @default(now())
   actualizadoEn  DateTime              @updatedAt
@@ -41,6 +47,7 @@ model Categoria {
   nombre         String      @unique
   descripcion    String?
   productos      Producto[]
+  activo         Boolean     @default(true)
   creadoEn       DateTime    @default(now())
   actualizadoEn  DateTime    @updatedAt
 }
@@ -87,6 +94,10 @@ model MovimientoInventario {
   stockAnterior    Int
   stockNuevo       Int
   notas            String?
+
+  estado           EstadoMovimiento  @default(ACTIVO)
+  anuladoEn        DateTime?
+  motivoAnulacion  String?
 
   productoId       String
   producto         Producto          @relation(fields: [productoId], references: [id])

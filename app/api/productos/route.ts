@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const incluirInactivos = searchParams.get("incluirInactivos") === "true";
+
     const productos = await prisma.producto.findMany({
+      where: incluirInactivos ? {} : { activo: true },
       include: {
         categoria: true,
       },
@@ -13,7 +17,9 @@ export async function GET() {
     });
 
     return NextResponse.json(productos);
-  } catch {
+  } catch (error) {
+    console.error("Error al obtener productos:", error);
+
     return NextResponse.json(
       { error: "No se pudieron obtener los productos" },
       { status: 500 }
@@ -59,6 +65,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const categoria = await prisma.categoria.findUnique({
+      where: { id: categoriaId },
+    });
+
+    if (!categoria) {
+      return NextResponse.json(
+        { error: "La categoría no existe" },
+        { status: 404 }
+      );
+    }
+
+    if (!categoria.activo) {
+      return NextResponse.json(
+        { error: "No se puede usar una categoría inactiva" },
+        { status: 400 }
+      );
+    }
+
     const productoExistente = await prisma.producto.findUnique({
       where: {
         sku: sku.trim(),
@@ -70,6 +94,21 @@ export async function POST(request: Request) {
         { error: "Ya existe un producto con ese SKU" },
         { status: 409 }
       );
+    }
+
+    if (codigoBarras?.trim()) {
+      const productoCodigoExistente = await prisma.producto.findFirst({
+        where: {
+          codigoBarras: codigoBarras.trim(),
+        },
+      });
+
+      if (productoCodigoExistente) {
+        return NextResponse.json(
+          { error: "Ya existe un producto con ese código de barras" },
+          { status: 409 }
+        );
+      }
     }
 
     const producto = await prisma.producto.create({
@@ -91,10 +130,12 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(producto, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Error al crear producto:", error);
+
     return NextResponse.json(
       { error: "No se pudo crear el producto" },
       { status: 500 }
     );
   }
-} 
+}

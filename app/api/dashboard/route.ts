@@ -9,6 +9,9 @@ type ProductoDashboard = {
 export async function GET() {
   try {
     const productos = (await prisma.producto.findMany({
+      where: {
+        activo: true,
+      },
       select: {
         stock: true,
         stockMinimo: true,

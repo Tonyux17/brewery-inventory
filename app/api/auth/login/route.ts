@@ -6,7 +6,10 @@ import { crearToken, guardarSesion } from "@/lib/auth";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { correo, password } = body;
+    const correo = String(body.correo || "")
+      .trim()
+      .toLowerCase();
+    const password = String(body.password || "");
 
     if (!correo || !password) {
       return NextResponse.json(
@@ -23,6 +26,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Credenciales inválidas" },
         { status: 401 }
+      );
+    }
+
+    if (!usuario.activo) {
+      return NextResponse.json(
+        { error: "Usuario desactivado" },
+        { status: 403 }
       );
     }
 
@@ -53,7 +63,9 @@ export async function POST(request: Request) {
         rol: usuario.rol,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("Error al iniciar sesión:", error);
+
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }

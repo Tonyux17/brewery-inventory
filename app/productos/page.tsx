@@ -50,7 +50,9 @@ export default function PaginaProductos() {
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("todos");
 
   async function cargarCategorias() {
-    const respuesta = await fetch("/api/categorias");
+    const respuesta = await fetch("/api/categorias", {
+      cache: "no-store",
+    });
     const data = await respuesta.json();
 
     if (!respuesta.ok) {
@@ -61,7 +63,9 @@ export default function PaginaProductos() {
   }
 
   async function cargarProductos() {
-    const respuesta = await fetch("/api/productos");
+    const respuesta = await fetch("/api/productos?incluirInactivos=true", {
+      cache: "no-store",
+    });
     const data = await respuesta.json();
 
     if (!respuesta.ok) {
@@ -160,7 +164,11 @@ export default function PaginaProductos() {
         return;
       }
 
-      await cargarProductos();
+      setProductos((prev) =>
+        prev.map((producto) =>
+          producto.id === id ? { ...producto, activo: data.activo } : producto
+        )
+      );
     } catch (error) {
       console.error(error);
       setError("Ocurrió un error al cambiar el estado del producto");
@@ -192,10 +200,10 @@ export default function PaginaProductos() {
 
     return filtrados.sort((a, b) => {
       const prioridad = (producto: Producto) => {
-        if (producto.stock <= 0) return 0;
-        if (producto.stock <= producto.stockMinimo) return 1;
-        if (!producto.activo) return 3;
-        return 2;
+        if (!producto.activo) return 0;
+        if (producto.stock <= 0) return 1;
+        if (producto.stock <= producto.stockMinimo) return 2;
+        return 3;
       };
 
       const prioridadA = prioridad(a);
@@ -417,9 +425,25 @@ export default function PaginaProductos() {
               </p>
             </div>
 
-            <form onSubmit={manejarSubmit} style={{ marginTop: "22px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <form
+              onSubmit={manejarSubmit}
+              style={{
+                marginTop: "22px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
               <div>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "#374151",
+                  }}
+                >
                   Nombre
                 </label>
                 <input
@@ -436,19 +460,28 @@ export default function PaginaProductos() {
                     color: "#111827",
                     background: "#ffffff",
                     outline: "none",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "#374151",
+                  }}
+                >
                   Descripción
                 </label>
                 <textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   placeholder="Descripción del producto"
-                  rows={3}
+                  rows={4}
                   style={{
                     width: "100%",
                     borderRadius: "16px",
@@ -459,12 +492,21 @@ export default function PaginaProductos() {
                     background: "#ffffff",
                     outline: "none",
                     resize: "vertical",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "#374151",
+                  }}
+                >
                   SKU
                 </label>
                 <input
@@ -481,12 +523,21 @@ export default function PaginaProductos() {
                     color: "#111827",
                     background: "#ffffff",
                     outline: "none",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "#374151",
+                  }}
+                >
                   Código de barras
                 </label>
                 <input
@@ -503,13 +554,28 @@ export default function PaginaProductos() {
                     color: "#111827",
                     background: "#ffffff",
                     outline: "none",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
                     Volumen (ml)
                   </label>
                   <input
@@ -526,12 +592,21 @@ export default function PaginaProductos() {
                       color: "#111827",
                       background: "#ffffff",
                       outline: "none",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
                     Categoría
                   </label>
                   <select
@@ -546,6 +621,7 @@ export default function PaginaProductos() {
                       color: "#111827",
                       background: "#ffffff",
                       outline: "none",
+                      boxSizing: "border-box",
                     }}
                   >
                     <option value="">Selecciona una categoría</option>
@@ -558,9 +634,23 @@ export default function PaginaProductos() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
                     Precio compra
                   </label>
                   <input
@@ -578,12 +668,21 @@ export default function PaginaProductos() {
                       color: "#111827",
                       background: "#ffffff",
                       outline: "none",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
                     Precio venta
                   </label>
                   <input
@@ -601,14 +700,29 @@ export default function PaginaProductos() {
                       color: "#111827",
                       background: "#ffffff",
                       outline: "none",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
                     Stock inicial
                   </label>
                   <input
@@ -625,12 +739,21 @@ export default function PaginaProductos() {
                       color: "#111827",
                       background: "#ffffff",
                       outline: "none",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
                     Stock mínimo
                   </label>
                   <input
@@ -647,6 +770,7 @@ export default function PaginaProductos() {
                       color: "#111827",
                       background: "#ffffff",
                       outline: "none",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
@@ -690,8 +814,14 @@ export default function PaginaProductos() {
             </form>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
-            <div
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <section
               style={{
                 background: "#ffffff",
                 borderRadius: "28px",
@@ -700,125 +830,159 @@ export default function PaginaProductos() {
                 boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
               }}
             >
-              <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.14em",
-                    color: "#9ca3af",
-                    fontWeight: 700,
-                  }}
-                >
-                  Búsqueda
-                </p>
-                <h2
-                  style={{
-                    margin: "10px 0 0 0",
-                    fontSize: "30px",
-                    color: "#111827",
-                    fontWeight: 800,
-                  }}
-                >
-                  Lista de productos
-                </h2>
-                <p
-                  style={{
-                    margin: "8px 0 0 0",
-                    fontSize: "14px",
-                    color: "#6b7280",
-                  }}
-                >
-                  Busca, filtra y exporta productos del inventario.
-                </p>
-              </div>
-
               <div
                 style={{
-                  marginTop: "22px",
-                  display: "grid",
-                  gridTemplateColumns: "1.4fr 1fr 1fr",
-                  gap: "12px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "16px",
+                  flexWrap: "wrap",
+                  alignItems: "center",
                 }}
               >
                 <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
-                    Buscar
-                  </label>
-                  <input
-                    type="text"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder="Nombre, SKU o descripción"
+                  <h2
                     style={{
-                      width: "100%",
-                      borderRadius: "16px",
-                      border: "1px solid #d1d5db",
-                      padding: "12px 14px",
-                      fontSize: "14px",
+                      margin: 0,
+                      fontSize: "24px",
+                      fontWeight: 800,
                       color: "#111827",
-                      background: "#ffffff",
-                      outline: "none",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
-                    Categoría
-                  </label>
-                  <select
-                    value={filtroCategoria}
-                    onChange={(e) => setFiltroCategoria(e.target.value)}
-                    style={{
-                      width: "100%",
-                      borderRadius: "16px",
-                      border: "1px solid #d1d5db",
-                      padding: "12px 14px",
-                      fontSize: "14px",
-                      color: "#111827",
-                      background: "#ffffff",
-                      outline: "none",
                     }}
                   >
-                    <option value="todas">Todas</option>
-                    {categorias.map((categoria) => (
-                      <option key={categoria.id} value={categoria.id}>
-                        {categoria.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 700, color: "#374151" }}>
-                    Estado
-                  </label>
-                  <select
-                    value={filtroEstado}
-                    onChange={(e) => setFiltroEstado(e.target.value as FiltroEstado)}
+                    Explorar productos
+                  </h2>
+                  <p
                     style={{
-                      width: "100%",
-                      borderRadius: "16px",
-                      border: "1px solid #d1d5db",
-                      padding: "12px 14px",
+                      margin: "8px 0 0 0",
                       fontSize: "14px",
-                      color: "#111827",
-                      background: "#ffffff",
-                      outline: "none",
+                      color: "#6b7280",
                     }}
                   >
-                    <option value="todos">Todos</option>
-                    <option value="activos">Activos</option>
-                    <option value="inactivos">Inactivos</option>
-                  </select>
+                    Busca, filtra y exporta los registros del catálogo.
+                  </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={exportarProductosCSV}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 16px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Exportar CSV
+                </button>
               </div>
 
               <div
                 style={{
-                  marginTop: "18px",
+                  marginTop: "20px",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr) auto auto auto",
+                  gap: "12px",
+                }}
+              >
+                <input
+                  type="text"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar por nombre, SKU o descripción"
+                  style={{
+                    width: "100%",
+                    borderRadius: "16px",
+                    border: "1px solid #d1d5db",
+                    padding: "12px 14px",
+                    fontSize: "14px",
+                    color: "#111827",
+                    background: "#ffffff",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <select
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                  style={{
+                    width: "100%",
+                    borderRadius: "16px",
+                    border: "1px solid #d1d5db",
+                    padding: "12px 14px",
+                    fontSize: "14px",
+                    color: "#111827",
+                    background: "#ffffff",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="todas">Todas las categorías</option>
+                  {categorias.map((categoria) => (
+                    <option key={categoria.id} value={categoria.id}>
+                      {categoria.nombre}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado("todos")}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: filtroEstado === "todos" ? "#111827" : "#ffffff",
+                    color: filtroEstado === "todos" ? "#ffffff" : "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Todos
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado("activos")}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: filtroEstado === "activos" ? "#16a34a" : "#ffffff",
+                    color: filtroEstado === "activos" ? "#ffffff" : "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Activos
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado("inactivos")}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    background: filtroEstado === "inactivos" ? "#dc2626" : "#ffffff",
+                    color: filtroEstado === "inactivos" ? "#ffffff" : "#111827",
+                    borderRadius: "16px",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Inactivos
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "12px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -826,134 +990,110 @@ export default function PaginaProductos() {
                   flexWrap: "wrap",
                 }}
               >
-                <p style={{ margin: 0, fontSize: "14px", color: "#6b7280", fontWeight: 600 }}>
-                  Mostrando {productosFiltrados.length} de {productos.length} productos
-                </p>
-
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={limpiarFiltros}
-                    style={{
-                      background: "#ffffff",
-                      color: "#374151",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "14px",
-                      padding: "10px 14px",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Limpiar filtros
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={exportarProductosCSV}
-                    style={{
-                      background: "#111827",
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: "14px",
-                      padding: "10px 14px",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Exportar CSV
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {cargando ? (
-              <div
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "28px",
-                  padding: "24px",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
-                  color: "#6b7280",
-                  fontSize: "14px",
-                }}
-              >
-                Cargando productos...
-              </div>
-            ) : productosFiltrados.length === 0 ? (
-              <div
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "28px",
-                  padding: "24px",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
-                }}
-              >
-                <div
+                <p
                   style={{
-                    borderRadius: "20px",
-                    padding: "18px",
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
+                    margin: 0,
+                    fontSize: "13px",
+                    color: "#6b7280",
                   }}
                 >
-                  <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
-                    Sin resultados
-                  </p>
-                  <p style={{ margin: "8px 0 0 0", color: "#2563eb", fontSize: "14px" }}>
-                    No se encontraron productos con los filtros aplicados.
-                  </p>
-                </div>
+                  Mostrando {productosFiltrados.length} producto(s)
+                </p>
+
+                <button
+                  type="button"
+                  onClick={limpiarFiltros}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#2563eb",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontSize: "13px",
+                  }}
+                >
+                  Limpiar filtros
+                </button>
               </div>
+            </section>
+
+            {cargando ? (
+              <section
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "28px",
+                  padding: "32px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#6b7280",
+                    fontSize: "15px",
+                  }}
+                >
+                  Cargando productos...
+                </p>
+              </section>
+            ) : productosFiltrados.length === 0 ? (
+              <section
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "28px",
+                  padding: "32px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#6b7280",
+                    fontSize: "15px",
+                  }}
+                >
+                  No se encontraron productos con los filtros aplicados.
+                </p>
+              </section>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: "18px",
+                }}
+              >
                 {productosFiltrados.map((producto) => {
                   const estadoInventario = obtenerEstadoInventario(producto);
-                  const esAgotado = estadoInventario === "agotado";
-                  const esBajo = estadoInventario === "bajo";
 
                   return (
-                    <div
+                    <article
                       key={producto.id}
                       style={{
                         background: "#ffffff",
                         borderRadius: "28px",
-                        padding: "22px",
-                        border: esAgotado
-                          ? "1px solid #fca5a5"
-                          : esBajo
-                          ? "1px solid #fde68a"
-                          : "1px solid #e5e7eb",
-                        boxShadow: esAgotado
-                          ? "0 10px 24px rgba(239,68,68,0.10)"
-                          : esBajo
-                          ? "0 10px 24px rgba(245,158,11,0.10)"
-                          : "0 8px 24px rgba(0,0,0,0.05)",
-                        backgroundImage: esAgotado
-                          ? "linear-gradient(180deg, #ffffff 0%, #fff7f7 100%)"
-                          : esBajo
-                          ? "linear-gradient(180deg, #ffffff 0%, #fffdf3 100%)"
-                          : "none",
+                        padding: "24px",
+                        border: "1px solid #e5e7eb",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                        opacity: producto.activo ? 1 : 0.78,
                       }}
                     >
                       <div
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
+                          gap: "16px",
                           alignItems: "flex-start",
-                          gap: "18px",
                           flexWrap: "wrap",
                         }}
                       >
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ flex: 1 }}>
                           <div
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              gap: "10px",
+                              gap: "12px",
                               flexWrap: "wrap",
                             }}
                           >
@@ -970,46 +1110,47 @@ export default function PaginaProductos() {
 
                             <span
                               style={{
-                                background: producto.activo ? "#dcfce7" : "#e5e7eb",
-                                color: producto.activo ? "#166534" : "#374151",
+                                display: "inline-flex",
+                                alignItems: "center",
                                 borderRadius: "999px",
                                 padding: "6px 12px",
                                 fontSize: "12px",
                                 fontWeight: 800,
+                                background: producto.activo ? "#dcfce7" : "#e5e7eb",
+                                color: producto.activo ? "#166534" : "#475569",
                               }}
                             >
                               {producto.activo ? "Activo" : "Inactivo"}
                             </span>
 
-                            {esAgotado ? (
-                              <span
-                                style={{
-                                  background: "#fee2e2",
-                                  color: "#991b1b",
-                                  borderRadius: "999px",
-                                  padding: "6px 12px",
-                                  fontSize: "12px",
-                                  fontWeight: 800,
-                                }}
-                              >
-                                Agotado
-                              </span>
-                            ) : null}
-
-                            {esBajo ? (
-                              <span
-                                style={{
-                                  background: "#fef3c7",
-                                  color: "#92400e",
-                                  borderRadius: "999px",
-                                  padding: "6px 12px",
-                                  fontSize: "12px",
-                                  fontWeight: 800,
-                                }}
-                              >
-                                Stock bajo
-                              </span>
-                            ) : null}
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                borderRadius: "999px",
+                                padding: "6px 12px",
+                                fontSize: "12px",
+                                fontWeight: 800,
+                                background:
+                                  estadoInventario === "agotado"
+                                    ? "#fee2e2"
+                                    : estadoInventario === "bajo"
+                                    ? "#fef3c7"
+                                    : "#e0f2fe",
+                                color:
+                                  estadoInventario === "agotado"
+                                    ? "#b91c1c"
+                                    : estadoInventario === "bajo"
+                                    ? "#92400e"
+                                    : "#0f766e",
+                              }}
+                            >
+                              {estadoInventario === "agotado"
+                                ? "Agotado"
+                                : estadoInventario === "bajo"
+                                ? "Stock bajo"
+                                : "Disponible"}
+                            </span>
                           </div>
 
                           <p
@@ -1017,7 +1158,6 @@ export default function PaginaProductos() {
                               margin: "12px 0 0 0",
                               fontSize: "15px",
                               color: "#6b7280",
-                              lineHeight: 1.6,
                             }}
                           >
                             {producto.descripcion || "Sin descripción"}
@@ -1031,183 +1171,48 @@ export default function PaginaProductos() {
                               gap: "10px",
                             }}
                           >
-                            <span
-                              style={{
-                                background: "#f3f4f6",
-                                color: "#374151",
-                                borderRadius: "14px",
-                                padding: "8px 12px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              SKU: {producto.sku}
-                            </span>
-
-                            <span
-                              style={{
-                                background: "#f3f4f6",
-                                color: "#374151",
-                                borderRadius: "14px",
-                                padding: "8px 12px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Categoría: {producto.categoria.nombre}
-                            </span>
-
-                            <span
-                              style={{
-                                background: esAgotado
-                                  ? "#fee2e2"
-                                  : esBajo
-                                  ? "#fef3c7"
-                                  : "#f3f4f6",
-                                color: esAgotado
-                                  ? "#991b1b"
-                                  : esBajo
-                                  ? "#92400e"
-                                  : "#374151",
-                                borderRadius: "14px",
-                                padding: "8px 12px",
-                                fontSize: "13px",
-                                fontWeight: 800,
-                              }}
-                            >
-                              Stock: {producto.stock}
-                            </span>
-
-                            <span
-                              style={{
-                                background: "#f3f4f6",
-                                color: "#374151",
-                                borderRadius: "14px",
-                                padding: "8px 12px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Mínimo: {producto.stockMinimo}
-                            </span>
-
-                            <span
-                              style={{
-                                background: "#f3f4f6",
-                                color: "#374151",
-                                borderRadius: "14px",
-                                padding: "8px 12px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Compra: ${producto.precioCompra}
-                            </span>
-
-                            <span
-                              style={{
-                                background: "#f3f4f6",
-                                color: "#374151",
-                                borderRadius: "14px",
-                                padding: "8px 12px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Venta: ${producto.precioVenta}
-                            </span>
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: "20px",
-                              display: "flex",
-                              gap: "12px",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <Link
-                              href={`/productos/${producto.id}`}
-                              style={{
-                                textDecoration: "none",
-                                background: "#ffffff",
-                                color: "#374151",
-                                border: "1px solid #d1d5db",
-                                borderRadius: "14px",
-                                padding: "11px 16px",
-                                fontSize: "14px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Editar producto
-                            </Link>
-
-                            {producto.activo ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  cambiarEstadoProducto(producto.id, false)
-                                }
-                                disabled={procesandoEstado === producto.id}
-                                style={{
-                                  background: "#dc2626",
-                                  color: "#ffffff",
-                                  border: "none",
-                                  borderRadius: "14px",
-                                  padding: "11px 16px",
-                                  fontSize: "14px",
-                                  fontWeight: 700,
-                                  cursor: "pointer",
-                                  opacity:
-                                    procesandoEstado === producto.id ? 0.6 : 1,
-                                }}
-                              >
-                                {procesandoEstado === producto.id
-                                  ? "Desactivando..."
-                                  : "Desactivar"}
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  cambiarEstadoProducto(producto.id, true)
-                                }
-                                disabled={procesandoEstado === producto.id}
-                                style={{
-                                  background: "#16a34a",
-                                  color: "#ffffff",
-                                  border: "none",
-                                  borderRadius: "14px",
-                                  padding: "11px 16px",
-                                  fontSize: "14px",
-                                  fontWeight: 700,
-                                  cursor: "pointer",
-                                  opacity:
-                                    procesandoEstado === producto.id ? 0.6 : 1,
-                                }}
-                              >
-                                {procesandoEstado === producto.id
-                                  ? "Reactivando..."
-                                  : "Reactivar"}
-                              </button>
-                            )}
+                            {[
+                              `SKU: ${producto.sku}`,
+                              `Categoría: ${producto.categoria.nombre}`,
+                              `Stock: ${producto.stock}`,
+                              `Mínimo: ${producto.stockMinimo}`,
+                              `Compra: $${producto.precioCompra}`,
+                              `Venta: $${producto.precioVenta}`,
+                              producto.volumenMl ? `${producto.volumenMl} ml` : null,
+                            ]
+                              .filter(Boolean)
+                              .map((item) => (
+                                <span
+                                  key={String(item)}
+                                  style={{
+                                    borderRadius: "14px",
+                                    background: "#f3f4f6",
+                                    color: "#374151",
+                                    padding: "10px 12px",
+                                    fontSize: "13px",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {item}
+                                </span>
+                              ))}
                           </div>
                         </div>
 
                         <div
                           style={{
-                            minWidth: "150px",
+                            minWidth: "130px",
                             textAlign: "right",
                           }}
                         >
                           <p
                             style={{
                               margin: 0,
-                              fontSize: "12px",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.12em",
+                              fontSize: "11px",
                               color: "#9ca3af",
-                              fontWeight: 700,
+                              fontWeight: 800,
+                              letterSpacing: "0.14em",
+                              textTransform: "uppercase",
                             }}
                           >
                             Creado
@@ -1216,7 +1221,7 @@ export default function PaginaProductos() {
                             style={{
                               margin: "8px 0 0 0",
                               fontSize: "14px",
-                              color: "#4b5563",
+                              color: "#374151",
                               fontWeight: 700,
                             }}
                           >
@@ -1224,7 +1229,92 @@ export default function PaginaProductos() {
                           </p>
                         </div>
                       </div>
-                    </div>
+
+                      <div
+                        style={{
+                          marginTop: "22px",
+                          display: "flex",
+                          gap: "12px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Link
+                          href={`/productos/${producto.id}`}
+                          style={{
+                            textDecoration: "none",
+                            borderRadius: "16px",
+                            border: "1px solid #d1d5db",
+                            background: "#ffffff",
+                            color: "#111827",
+                            padding: "12px 16px",
+                            fontSize: "14px",
+                            fontWeight: 700,
+                          }}
+                        >
+                          Editar producto
+                        </Link>
+
+                        {producto.activo ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const confirmado = window.confirm(
+                                `¿Deseas eliminar el producto "${producto.nombre}"?`
+                              );
+
+                              if (confirmado) {
+                                cambiarEstadoProducto(producto.id, false);
+                              }
+                            }}
+                            disabled={procesandoEstado === producto.id}
+                            style={{
+                              border: "none",
+                              borderRadius: "16px",
+                              background: "#dc2626",
+                              color: "#ffffff",
+                              padding: "12px 16px",
+                              fontSize: "14px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              opacity: procesandoEstado === producto.id ? 0.7 : 1,
+                            }}
+                          >
+                            {procesandoEstado === producto.id
+                              ? "Eliminando..."
+                              : "Eliminar"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const confirmado = window.confirm(
+                                `¿Deseas restaurar el producto "${producto.nombre}"?`
+                              );
+
+                              if (confirmado) {
+                                cambiarEstadoProducto(producto.id, true);
+                              }
+                            }}
+                            disabled={procesandoEstado === producto.id}
+                            style={{
+                              border: "1px solid #d1d5db",
+                              borderRadius: "16px",
+                              background: "#ffffff",
+                              color: "#111827",
+                              padding: "12px 16px",
+                              fontSize: "14px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              opacity: procesandoEstado === producto.id ? 0.7 : 1,
+                            }}
+                          >
+                            {procesandoEstado === producto.id
+                              ? "Restaurando..."
+                              : "Restaurar"}
+                          </button>
+                        )}
+                      </div>
+                    </article>
                   );
                 })}
               </div>

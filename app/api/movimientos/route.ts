@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const incluirAnulados = searchParams.get("incluirAnulados") === "true";
+
     const movimientos = await prisma.movimientoInventario.findMany({
+      where: incluirAnulados ? {} : { estado: "ACTIVO" },
       include: {
         producto: {
           include: {
@@ -19,7 +23,9 @@ export async function GET() {
     });
 
     return NextResponse.json(movimientos);
-  } catch {
+  } catch (error) {
+    console.error("Error al obtener movimientos:", error);
+
     return NextResponse.json(
       { error: "No se pudieron obtener los movimientos" },
       { status: 500 }
@@ -77,7 +83,7 @@ export async function POST(request: Request) {
 
     const usuario = await prisma.usuario.findUnique({
       where: {
-        correo: usuarioCorreo,
+        correo: String(usuarioCorreo).trim().toLowerCase(),
       },
     });
 
@@ -88,9 +94,19 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!usuario.activo) {
+      return NextResponse.json(
+        { error: "El usuario está inactivo" },
+        { status: 403 }
+      );
+    }
+
     const producto = await prisma.producto.findUnique({
       where: {
         id: productoId,
+      },
+      include: {
+        categoria: true,
       },
     });
 
@@ -98,6 +114,23 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Producto no encontrado" },
         { status: 404 }
+      );
+    }
+
+    if (!producto.activo) {
+      return NextResponse.json(
+        { error: "No se pueden registrar movimientos para un producto inactivo" },
+        { status: 400 }
+      );
+    }
+
+    if (!producto.categoria.activo) {
+      return NextResponse.json(
+        {
+          error:
+            "No se pueden registrar movimientos para un producto cuya categoría está inactiva",
+        },
+        { status: 400 }
       );
     }
 
@@ -118,40 +151,50 @@ export async function POST(request: Request) {
       stockNuevo = stockAnterior - cantidadNumero;
     } else if (tipo === "AJUSTE") {
       stockNuevo = cantidadNumero;
+    } else {
+      return NextResponse.json(
+        { error: "Tipo de movimiento inválido" },
+        { status: 400 }
+      );
     }
 
-    const resultado = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const productoActualizado = await tx.producto.update({
-        where: {
-          id: producto.id,
-        },
-        data: {
-          stock: stockNuevo,
-        },
-      });
+    const resultado = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const productoActualizado = await tx.producto.update({
+          where: {
+            id: producto.id,
+          },
+          data: {
+            stock: stockNuevo,
+          },
+        });
 
-      const movimiento = await tx.movimientoInventario.create({
-        data: {
-          tipo,
-          motivo,
-          cantidad: cantidadNumero,
-          stockAnterior,
-          stockNuevo,
-          notas: notas?.trim() || null,
-          productoId: producto.id,
-          usuarioId: usuario.id,
-        },
-        include: {
-          producto: true,
-          usuario: true,
-        },
-      });
+        const movimiento = await tx.movimientoInventario.create({
+          data: {
+            tipo,
+            motivo,
+            cantidad: cantidadNumero,
+            stockAnterior,
+            stockNuevo,
+            notas: notas?.trim() || null,
+            estado: "ACTIVO",
+            productoId: producto.id,
+            usuarioId: usuario.id,
+          },
+          include: {
+            producto: true,
+            usuario: true,
+          },
+        });
 
-      return { productoActualizado, movimiento };
-    });
+        return { productoActualizado, movimiento };
+      }
+    );
 
     return NextResponse.json(resultado, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Error al registrar movimiento:", error);
+
     return NextResponse.json(
       { error: "No se pudo registrar el movimiento" },
       { status: 500 }
