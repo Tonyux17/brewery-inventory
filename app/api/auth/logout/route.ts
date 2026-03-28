@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const loginUrl = new URL("/login", request.url);
 
-    const response = NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl, { status: 303 });
 
     response.cookies.set("token", "", {
       httpOnly: true,
