@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
 
-function crearRespuestaLogout(request: Request) {
-  const url = new URL("/login", request.url);
-  const response = NextResponse.redirect(url);
-
-  response.cookies.set("sesion", "", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    path: "/",
-    expires: new Date(0),
-  });
-
-  return response;
-}
-
 export async function POST(request: Request) {
-  return crearRespuestaLogout(request);
-}
+  try {
+    const loginUrl = new URL("/login", request.url);
 
-export async function GET(request: Request) {
-  return crearRespuestaLogout(request);
+    const response = NextResponse.redirect(loginUrl);
+
+    response.cookies.set("token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: new Date(0),
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+
+    return NextResponse.json(
+      { error: "No se pudo cerrar sesión" },
+      { status: 500 }
+    );
+  }
 }
